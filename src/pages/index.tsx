@@ -5,8 +5,11 @@ import Link from "next/link";
 import { api } from "~/utils/api";
 
 export default function Home() {
-  const hello = api.example.hello.useQuery({ text: "from tRPC" });
+
   const user = useUser();
+
+  const {data} = api.posts.getAll.useQuery();
+
   return (
     <>
       <Head>
@@ -43,24 +46,15 @@ export default function Home() {
               </div>
             </Link>
           </div>
-          <p className="text-2xl text-white">
-            {hello.data ? hello.data.greeting : "Loading tRPC query..."}
-          </p>
-          {user.isSignedIn ? (
-            <div className="flex flex-col items-center gap-4">
-              <p className="text-2xl text-white">
-                You are signed in as {user.user.firstName}
-              </p>
-              <div className="p-3 bg-blue-200 text-center rounded-full"><SignOutButton /></div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-4">
-              <p className="text-2xl text-white">
-                You are not signed in.{" "}
-              </p>
-              <div className="bg-blue-200 text-center p-3 rounded-full mt-3"><SignInButton /></div>
-            </div>
-          )}
+
+          <div>
+            {data?.map((post) => ( 
+              <div key={post.id} className="flex flex-col gap-4 rounded-xl bg-white/10 p-4 text-white hover:bg-white/20">
+                <h3 className="text-2xl font-bold">Post</h3>
+                <div className="text-lg">{post.content}</div>
+              </div>
+            ))}
+          </div>
 
         </div>
       </main>
