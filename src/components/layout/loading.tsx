@@ -1,7 +1,7 @@
 import { retryDelay } from "@trpc/client/dist/internals/retryDelay"
 
 
-const LoaderSpinner = (props : {size? : number}) => {
+export const LoaderSpinner = (props : {size? : number}) => {
 
     return (
 

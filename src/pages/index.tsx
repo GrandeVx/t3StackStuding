@@ -8,19 +8,35 @@ import { RouterOutputs, api } from "~/utils/api";
 
 import * as dayjs from 'dayjs'
 import relativeTime from "dayjs/plugin/relativeTime";
-import { LoadingPage } from "~/components/layout/loading";
-
+import { LoaderSpinner, LoadingPage } from "~/components/layout/loading";
+import { useState } from "react";
 
 const CreatePostWizard = () => {
 
   const {user} = useUser();
+  const ctx = api.useContext();
+
+  const {mutate, isLoading } = api.posts.create.useMutation({
+    onSuccess: () => {
+      setInput("");
+      void ctx.posts.getAll.invalidate();
+    }
+  });
+  const [input, setInput] = useState<string>("");
+  const HandleSubmit = async () => {  
+    if (!user) return;
+    await mutate({content: input});
+  }
 
   if (!user) return null;
 
   return (
-    <div className="flex gap-3 w-full mt-5 p-3">
+    <div className="flex gap-3 w-full mt-5 p-3 justify-center items-center">
       <Image src={user.profileImageUrl} className="w-14 h-14 rounded-full" width={100} height={100}  alt="Profile Image"/>
-      <input placeholder="Type a Post..." className="bg-transparent grow outline-none"></input>
+      <input placeholder="Type a Post..." className="bg-transparent  grow outline-none" onChange={(e) => {
+        setInput(e.target.value)
+      }}value={input}></input>
+      {isLoading ? <LoaderSpinner /> : <button className="bg-slate-400 rounded-lg px-4 py-2 text-white" onClick={HandleSubmit}>Post</button>}
     </div>
   )
 
