@@ -1,4 +1,9 @@
-import { SignInButton , SignOutButton, UserButton, useUser } from "@clerk/nextjs";
+import {
+  SignInButton,
+  SignOutButton,
+  UserButton,
+  useUser,
+} from "@clerk/nextjs";
 import { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
@@ -6,51 +11,90 @@ import Link from "next/link";
 
 import { RouterOutputs, api } from "~/utils/api";
 
-import * as dayjs from 'dayjs'
+import * as dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { LoaderSpinner, LoadingPage } from "~/components/layout/loading";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
 
 const CreatePostWizard = () => {
-
-  const {user} = useUser();
+  const { user } = useUser();
   const ctx = api.useContext();
 
-  const {mutate, isLoading } = api.posts.create.useMutation({
+  const { mutate, isLoading } = api.posts.create.useMutation({
     onSuccess: () => {
       setInput("");
       void ctx.posts.getAll.invalidate();
-    }
+    },
+    onError: (err) => {
+      const errorMessage = err.data?.zodError?.fieldErrors.content;
+      if (errorMessage && errorMessage[0]) {
+        toast.error(errorMessage[0]);
+      } else {
+        toast.error("Sorry, something went wrong. Please try again later.");
+      }
+    },
   });
   const [input, setInput] = useState<string>("");
-  const HandleSubmit = async () => {  
-    if (!user) return;
-    await mutate({content: input});
-  }
-
   if (!user) return null;
 
   return (
-    <div className="flex gap-3 w-full mt-5 p-3 justify-center items-center">
-      <Image src={user.profileImageUrl} className="w-14 h-14 rounded-full" width={100} height={100}  alt="Profile Image"/>
-      <input placeholder="Type a Post..." className="bg-transparent  grow outline-none" onChange={(e) => {
-        setInput(e.target.value)
-      }}value={input}></input>
-      {isLoading ? <LoaderSpinner /> : <button className="bg-slate-400 rounded-lg px-4 py-2 text-white" onClick={HandleSubmit}>Post</button>}
+    <div className="mt-5 flex w-full items-center justify-center gap-3 p-3">
+      <Image
+        src={user.imageUrl}
+        className="h-14 w-14 rounded-full"
+        width={100}
+        height={100}
+        alt="Profile Image"
+      />
+      <input
+        placeholder="Type a Post..."
+        className="grow bg-transparent outline-none"
+        onChange={(e) => {
+          setInput(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (input !== "") {
+              mutate({ content: input });
+            }
+          }
+        }}
+        value={input}
+      ></input>
+      {isLoading ? (
+        <LoaderSpinner />
+      ) : (
+        <button
+          className="rounded-lg bg-slate-400 px-4 py-2 text-white"
+          onClick={() => mutate({ content: input })}
+          disabled={input == ""}
+        >
+          Post
+        </button>
+      )}
     </div>
-  )
+  );
+};
 
-}
+type PostWithUser = RouterOutputs["posts"]["getAll"][number];
 
-type PostWithUser = RouterOutputs["posts"]["getAll"][number]
-
-const PostView = (props : PostWithUser) => {
-
-  const {post, author} = props;
+const PostView = (props: PostWithUser) => {
+  const { post, author } = props;
 
   return (
-    <div key={post.id} className="flex flex-row gap-4 rounded-xl bg-white/10 p-4 text-white hover:bg-white/20 mt-5">
-      <Image src={author.profilePictureUrl} className="w-14 h-14 rounded-full" width={100} height={100}  alt="Profile Image"/>
+    <div
+      key={post.id}
+      className="mt-5 flex flex-row gap-4 rounded-xl bg-white/10 p-4 text-white hover:bg-white/20"
+    >
+      <Image
+        src={author.profilePictureUrl}
+        className="h-14 w-14 rounded-full"
+        width={100}
+        height={100}
+        alt="Profile Image"
+      />
       <div>
         <section className="flex">
           <h3 className="text-slate-400">@{author.name} </h3>
@@ -58,14 +102,11 @@ const PostView = (props : PostWithUser) => {
         <div className="text-lg">{post.content}</div>
       </div>
     </div>
-  )
-
-}
+  );
+};
 
 const Feed = () => {
-
-
-  const {data, isLoading : postsLoading} = api.posts.getAll.useQuery();
+  const { data, isLoading: postsLoading } = api.posts.getAll.useQuery();
 
   if (!data || postsLoading) return <LoadingPage />;
 
@@ -73,18 +114,16 @@ const Feed = () => {
 
   return (
     <div>
-      {data.map((fullpost) => ( 
-        <PostView {...fullpost} key={fullpost.post.id}/>
+      {data.map((fullpost) => (
+        <PostView {...fullpost} key={fullpost.post.id} />
       ))}
     </div>
-  )
+  );
+};
 
-}
-
-const Home : NextPage = () => {
-
-  const {isLoaded: userLoaded, isSignedIn} = useUser();
-  api.posts.getAll.useQuery()
+const Home: NextPage = () => {
+  const { isLoaded: userLoaded, isSignedIn } = useUser();
+  api.posts.getAll.useQuery();
   if (!userLoaded) return <div />;
 
   return (
@@ -95,15 +134,13 @@ const Home : NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex h-screen justify-center">
-        <div className="h-full w-full md:max-w-2xl border-x border-slate-400 p-4">
-          {isSignedIn && <CreatePostWizard/>}
-          <Feed />  
+        <div className="h-full w-full border-x border-slate-400 p-4 md:max-w-2xl">
+          {isSignedIn && <CreatePostWizard />}
+          <Feed />
         </div>
-
       </main>
     </>
   );
-}
+};
 
 export default Home;
-
