@@ -8,6 +8,7 @@ import { RouterOutputs, api } from "~/utils/api";
 
 import * as dayjs from 'dayjs'
 import relativeTime from "dayjs/plugin/relativeTime";
+import { LoadingPage } from "~/components/layout/loading";
 
 
 const CreatePostWizard = () => {
@@ -45,20 +46,30 @@ const PostView = (props : PostWithUser) => {
 
 }
 
+const Feed = () => {
+
+
+  const {data, isLoading : postsLoading} = api.posts.getAll.useQuery();
+
+  if (!data || postsLoading) return <LoadingPage />;
+
+  if (data.length === 0) return <div> No Posts </div>;
+
+  return (
+    <div>
+      {data.map((fullpost) => ( 
+        <PostView {...fullpost} key={fullpost.post.id}/>
+      ))}
+    </div>
+  )
+
+}
 
 const Home : NextPage = () => {
 
-  const user = useUser();
-
-  const {data, isLoading} = api.posts.getAll.useQuery();
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!data) {
-    return <div>Error</div>;
-  }
+  const {isLoaded: userLoaded, isSignedIn} = useUser();
+  api.posts.getAll.useQuery()
+  if (!userLoaded) return <div />;
 
   return (
     <>
@@ -69,13 +80,8 @@ const Home : NextPage = () => {
       </Head>
       <main className="flex h-screen justify-center">
         <div className="h-full w-full md:max-w-2xl border-x border-slate-400 p-4">
-          {user?.isSignedIn && <CreatePostWizard/>}
-          <div>
-              {data?.map((fullpost) => ( 
-                <PostView {...fullpost} key={fullpost.post.id}/>
-              ))}
-            </div>
-
+          {isSignedIn && <CreatePostWizard/>}
+          <Feed />  
         </div>
 
       </main>
