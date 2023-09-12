@@ -18,7 +18,7 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 
 const CreatePostWizard = () => {
-  const { user } = useUser();
+  const { user, isSignedIn } = useUser();
   const ctx = api.useContext();
 
   const { mutate, isLoading } = api.posts.create.useMutation({
@@ -36,7 +36,13 @@ const CreatePostWizard = () => {
     },
   });
   const [input, setInput] = useState<string>("");
-  if (!user) return null;
+
+  if (!isSignedIn)
+    return (
+      <div className="mt-5 flex w-full items-center justify-center gap-3 p-3">
+        <span>Please SignIn To write a post</span>
+      </div>
+    );
 
   return (
     <div className="mt-5 flex w-full items-center justify-center gap-3 p-3">
@@ -124,7 +130,6 @@ const Feed = () => {
 const Home: NextPage = () => {
   const { isLoaded: userLoaded, isSignedIn } = useUser();
   api.posts.getAll.useQuery();
-  if (!userLoaded) return <div />;
 
   return (
     <>
